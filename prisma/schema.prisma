@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+enum RequestStatus {
+  NEW
+  UNDER_REVIEW
+  QUOTED
+  APPROVED
+  IN_PROGRESS
+  AWAITING_CUSTOMER
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  businessName String?
+  email        String   @unique
+  mobile       String?
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  requests      ServiceRequest[] @relation("CustomerRequests")
+  assigned      ServiceRequest[] @relation("AssignedRequests")
+  notes         RequestNote[]
+  resetTokens   PasswordReset[]
+  auditLogs     AuditLog[]
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  summary      String
+  description  String
+  deliverables String[]
+  process      String[]
+  priceFrom    Int? // indicative price, INR
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  requests ServiceRequest[]
+}
+
+model ServiceRequest {
+  id          String        @id @default(cuid())
+  number      Int           @unique @default(autoincrement())
+  customerId  String
+  serviceId   String
+  title       String
+  scope       String
+  budget      String?
+  deadline    DateTime?
+  status      RequestStatus @default(NEW)
+  priority    Priority      @default(NORMAL)
+  assignedToId String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  customer    User          @relation("CustomerRequests", fields: [customerId], references: [id])
+  assignedTo  User?         @relation("AssignedRequests", fields: [assignedToId], references: [id])
+  service     Service       @relation(fields: [serviceId], references: [id])
+  attachments Attachment[]
+  notes       RequestNote[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  requestId  String
+  fileName   String
+  storedName String   @unique
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+  request    ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+// A message on a request. internal = staff-only note; otherwise visible to the customer.
+model RequestNote {
+  id        String   @id @default(cuid())
+  requestId String
+  authorId  String
+  body      String
+  internal  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  request   ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  detail    String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
+}
