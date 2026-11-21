@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/session";
-import { Card, PageHeader, StatusBadge } from "@/components/ui";
+import { Card, PageHeader, StatusBadge, btnPrimary } from "@/components/ui";
 import { AdminUpdateForm, StaffNoteForm } from "@/components/request-forms";
 import { fmtDate, reqNo } from "@/lib/status";
+import Link from "next/link";
+import { QuoteBadge } from "@/components/quote-document";
+import { formatINR } from "@/lib/money";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   await requireStaff();
@@ -13,6 +16,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       where: { id },
       include: {
         customer: true, service: true, attachments: true,
+        quotations: { orderBy: { createdAt: "desc" } },
         notes: { include: { author: { select: { name: true, role: true } } }, orderBy: { createdAt: "asc" } },
       },
     }),
@@ -49,6 +53,23 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </Card>
         </div>
         <div className="space-y-4">
+          <Card>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold text-navy">Quotations</h2>
+              <Link href={`/admin/quotations/new?request=${r.id}`} className={`${btnPrimary} !px-3 !py-1.5`}>Create</Link>
+            </div>
+            {r.quotations.length === 0 ? <p className="mt-2 text-sm text-muted">None yet.</p> : (
+              <ul className="mt-2 divide-y divide-line text-sm">
+                {r.quotations.map((q) => (
+                  <li key={q.id} className="flex items-center justify-between gap-2 py-2">
+                    <Link href={`/admin/quotations/${q.id}`} className="font-medium text-brand hover:underline">{q.number ?? "Draft"}</Link>
+                    <span className="tabular-nums text-muted">{formatINR(q.total)}</span>
+                    <QuoteBadge q={q} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
           <Card><h2 className="mb-3 font-semibold text-navy">Manage</h2><AdminUpdateForm request={r} staff={staff} /></Card>
           <Card>
             <h2 className="font-semibold text-navy">Customer</h2>

@@ -4,6 +4,9 @@ import { requireCustomer } from "@/lib/session";
 import { Card, PageHeader, StatusBadge } from "@/components/ui";
 import { ReplyForm } from "@/components/request-forms";
 import { fmtDate, reqNo } from "@/lib/status";
+import Link from "next/link";
+import { QuoteBadge } from "@/components/quote-document";
+import { formatINR } from "@/lib/money";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireCustomer();
@@ -13,6 +16,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     include: {
       service: true,
       attachments: true,
+      quotations: { where: { status: { not: "DRAFT" } }, orderBy: { sentAt: "desc" } },
       notes: { where: { internal: false }, include: { author: { select: { name: true, role: true } } }, orderBy: { createdAt: "asc" } },
     },
   });
@@ -47,6 +51,21 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <div className="mt-4"><ReplyForm requestId={r.id} /></div>
           </Card>
         </div>
+        <div className="space-y-4">
+        {r.quotations.length > 0 && (
+          <Card>
+            <h2 className="font-semibold text-navy">Quotations</h2>
+            <ul className="mt-2 divide-y divide-line text-sm">
+              {r.quotations.map((q) => (
+                <li key={q.id} className="flex items-center justify-between gap-2 py-2">
+                  <Link href={`/portal/quotations/${q.id}`} className="font-medium text-brand hover:underline">{q.number}</Link>
+                  <span className="tabular-nums text-muted">{formatINR(q.total)}</span>
+                  <QuoteBadge q={q} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
         <Card className="h-fit">
           <h2 className="font-semibold text-navy">Attachments</h2>
           {r.attachments.length === 0 ? (
@@ -59,6 +78,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             </ul>
           )}
         </Card>
+        </div>
       </div>
     </>
   );

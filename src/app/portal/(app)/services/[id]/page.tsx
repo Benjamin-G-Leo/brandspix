@@ -20,7 +20,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <Card className="lg:col-span-2"><h2 className="font-semibold text-navy">About</h2><p className="mt-2 text-sm leading-6">{s.description}</p></Card>
         <Card>
           <h2 className="font-semibold text-navy">Indicative pricing</h2>
-          <p className="mt-2 text-2xl font-semibold text-navy">{s.priceFrom ? `From ₹${s.priceFrom.toLocaleString("en-IN")}` : "On request"}</p>
+          <p className="mt-2 text-2xl font-semibold text-navy">{s.priceFrom ? `From ₹${s.priceFrom.toLocaleString("en-IN")}` : "Price on request"}</p>
           <p className="mt-1 text-xs text-muted">Final pricing is confirmed in your quotation.</p>
         </Card>
         <Card>

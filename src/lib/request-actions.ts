@@ -9,6 +9,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireCustomer, requireStaff } from "@/lib/session";
 import type { FormState } from "@/lib/auth-actions";
+import { STATUS_VALUES } from "@/lib/status";
 
 import { UPLOAD_DIR } from "@/lib/uploads";
 const MAX_FILES = 5;
@@ -89,7 +90,7 @@ export async function customerReplyAction(_: FormState, fd: FormData): Promise<F
   const req = await db.serviceRequest.findFirst({ where: { id: requestId, customerId: user.id } });
   if (!req) return { error: "Request not found" };
   await db.requestNote.create({ data: { requestId, authorId: user.id, body, internal: false } });
-  if (req.status === "AWAITING_CUSTOMER")
+  if (req.status === "NEED_INFO")
     await db.serviceRequest.update({ where: { id: requestId }, data: { status: "UNDER_REVIEW" } });
   revalidatePath(`/portal/requests/${requestId}`);
   return { message: "Message sent" };
@@ -97,7 +98,7 @@ export async function customerReplyAction(_: FormState, fd: FormData): Promise<F
 
 const updateSchema = z.object({
   requestId: z.string(),
-  status: z.enum(["NEW", "UNDER_REVIEW", "QUOTED", "APPROVED", "IN_PROGRESS", "AWAITING_CUSTOMER", "COMPLETED", "CANCELLED"]),
+  status: z.enum(STATUS_VALUES),
   priority: z.enum(["LOW", "NORMAL", "HIGH"]),
   assignedToId: z.string().optional(),
 });

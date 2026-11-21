@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/session";
 const nav = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/requests", label: "Service requests" },
+  { href: "/admin/quotations", label: "Quotations" },
 ];
 
 export default async function Layout({ children }: { children: React.ReactNode }) {

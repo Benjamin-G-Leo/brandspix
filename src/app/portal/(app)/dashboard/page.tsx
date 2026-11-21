@@ -2,13 +2,13 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireCustomer } from "@/lib/session";
 import { Card, EmptyState, PageHeader, StatusBadge, btnPrimary } from "@/components/ui";
-import { fmtDate, reqNo } from "@/lib/status";
+import { CUSTOMER_ACTION, fmtDate, reqNo } from "@/lib/status";
 
 export default async function Page() {
   const user = await requireCustomer();
   const [open, awaiting, recent] = await Promise.all([
     db.serviceRequest.count({ where: { customerId: user.id, status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
-    db.serviceRequest.count({ where: { customerId: user.id, status: "AWAITING_CUSTOMER" } }),
+    db.serviceRequest.count({ where: { customerId: user.id, status: { in: CUSTOMER_ACTION } } }),
     db.serviceRequest.findMany({
       where: { customerId: user.id }, orderBy: { updatedAt: "desc" }, take: 5, include: { service: true },
     }),
@@ -22,7 +22,7 @@ export default async function Page() {
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <Card><p className="text-sm text-muted">Open requests</p><p className="mt-1 text-3xl font-semibold text-navy">{open}</p></Card>
-        <Card><p className="text-sm text-muted">Waiting for your reply</p><p className="mt-1 text-3xl font-semibold text-navy">{awaiting}</p></Card>
+        <Card><p className="text-sm text-muted">Waiting on you</p><p className="mt-1 text-3xl font-semibold text-navy">{awaiting}</p></Card>
       </div>
       <h2 className="mb-3 font-semibold text-navy">Recent activity</h2>
       {recent.length === 0 ? (

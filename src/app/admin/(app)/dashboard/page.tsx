@@ -8,11 +8,11 @@ export default async function Page() {
   await requireStaff();
   const [customers, newReqs, active, recent] = await Promise.all([
     db.user.count({ where: { role: "CUSTOMER" } }),
-    db.serviceRequest.count({ where: { status: "NEW" } }),
-    db.serviceRequest.count({ where: { status: { in: ["UNDER_REVIEW", "QUOTED", "APPROVED", "IN_PROGRESS", "AWAITING_CUSTOMER"] } } }),
+    db.serviceRequest.count({ where: { status: "SUBMITTED" } }),
+    db.serviceRequest.count({ where: { status: { notIn: ["SUBMITTED", "COMPLETED", "CANCELLED"] } } }),
     db.serviceRequest.findMany({ orderBy: { createdAt: "desc" }, take: 6, include: { customer: true, service: true } }),
   ]);
-  const kpis = [["Customers", customers], ["New requests", newReqs], ["Requests in progress", active]] as const;
+  const kpis = [["Customers", customers], ["New requests", newReqs], ["Open requests", active]] as const;
   return (
     <>
       <PageHeader title="Dashboard" subtitle="Revenue and payment KPIs arrive with the billing phase." />

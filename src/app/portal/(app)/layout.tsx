@@ -6,6 +6,7 @@ const nav = [
   { href: "/portal/services", label: "Services" },
   { href: "/portal/request/new", label: "New request" },
   { href: "/portal/requests", label: "My requests" },
+  { href: "/portal/quotations", label: "Quotations" },
 ];
 
 export default async function Layout({ children }: { children: React.ReactNode }) {

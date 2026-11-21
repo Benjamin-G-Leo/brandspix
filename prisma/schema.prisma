@@ -14,13 +14,16 @@ enum Role {
 }
 
 enum RequestStatus {
-  NEW
+  SUBMITTED
   UNDER_REVIEW
-  QUOTED
-  APPROVED
+  NEED_INFO
+  QUOTATION_SENT
+  AWAITING_APPROVAL
+  PAYMENT_PENDING
   IN_PROGRESS
-  AWAITING_CUSTOMER
+  REVIEW
   COMPLETED
+  ON_HOLD
   CANCELLED
 }
 
@@ -47,6 +50,7 @@ model User {
   notes         RequestNote[]
   resetTokens   PasswordReset[]
   auditLogs     AuditLog[]
+  quotesCreated Quotation[] @relation("QuoteCreatedBy")
 }
 
 model PasswordReset {
@@ -84,7 +88,7 @@ model ServiceRequest {
   scope       String
   budget      String?
   deadline    DateTime?
-  status      RequestStatus @default(NEW)
+  status      RequestStatus @default(SUBMITTED)
   priority    Priority      @default(NORMAL)
   assignedToId String?
   createdAt   DateTime      @default(now())
@@ -95,6 +99,7 @@ model ServiceRequest {
   service     Service       @relation(fields: [serviceId], references: [id])
   attachments Attachment[]
   notes       RequestNote[]
+  quotations  Quotation[]
 
   @@index([customerId])
   @@index([status])
@@ -132,4 +137,59 @@ model AuditLog {
   detail    String?
   createdAt DateTime @default(now())
   actor     User?    @relation(fields: [actorId], references: [id])
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REVISION_REQUESTED
+  DECLINED
+  SUPERSEDED
+}
+
+// Money is stored in paise (integer) to avoid rounding errors. Tax rate is in basis points (1800 = 18%).
+model Quotation {
+  id             String      @id @default(cuid())
+  number         String?     @unique // BPX-Q-YYYY-0001, assigned when sent (drafts have none, keeping numbers gap-free)
+  requestId      String
+  status         QuoteStatus @default(DRAFT)
+  scope          String
+  milestones     String?
+  paymentTerms   String?
+  validUntil     DateTime
+  discount       Int         @default(0)
+  taxRateBp      Int         @default(1800)
+  advancePercent Int         @default(50)
+  subtotal       Int         @default(0)
+  taxAmount      Int         @default(0)
+  total          Int         @default(0)
+  customerNote   String?
+  sentAt         DateTime?
+  respondedAt    DateTime?
+  createdById    String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  request   ServiceRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  createdBy User            @relation("QuoteCreatedBy", fields: [createdById], references: [id])
+  items     QuotationItem[]
+
+  @@index([requestId])
+}
+
+model QuotationItem {
+  id          String    @id @default(cuid())
+  quotationId String
+  description String
+  quantity    Int
+  unitPrice   Int
+  sortOrder   Int       @default(0)
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+}
+
+// Per-year document counters, e.g. key "Q-2026" for quotation numbers.
+model Counter {
+  key   String @id
+  value Int    @default(0)
 }

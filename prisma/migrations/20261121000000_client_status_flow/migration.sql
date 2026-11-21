@@ -1,0 +1,9 @@
+-- Align request statuses with the client's workflow, keeping existing rows.
+ALTER TYPE "RequestStatus" RENAME VALUE 'NEW' TO 'SUBMITTED';
+ALTER TYPE "RequestStatus" RENAME VALUE 'QUOTED' TO 'QUOTATION_SENT';
+ALTER TYPE "RequestStatus" RENAME VALUE 'AWAITING_CUSTOMER' TO 'NEED_INFO';
+ALTER TYPE "RequestStatus" RENAME VALUE 'APPROVED' TO 'PAYMENT_PENDING';
+ALTER TYPE "RequestStatus" ADD VALUE 'AWAITING_APPROVAL';
+ALTER TYPE "RequestStatus" ADD VALUE 'REVIEW';
+ALTER TYPE "RequestStatus" ADD VALUE 'ON_HOLD';
+ALTER TABLE "ServiceRequest" ALTER COLUMN "status" SET DEFAULT 'SUBMITTED';
